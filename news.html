@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+  <head>
+    <meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Stock Pickr • News</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" /><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="bg-glow bg-glow-1"></div><div class="bg-glow bg-glow-2"></div>
+    <header class="hero wrapper">
+      <nav class="top-nav glass">
+        <h1>Stock Pickr</h1>
+        <div class="nav-links">
+          <a href="index.html">Stock Picks</a>
+          <a href="maps.html">Index Maps</a>
+          <a class="active" href="news.html">News</a>
+          <a href="crypto.html">Crypto</a>
+          <a href="prediction-markets.html">Prediction Markets</a>
+        </div>
+        <button id="themeToggle" class="theme-toggle" aria-label="Toggle dark and light mode">🌙</button>
+      </nav>
+      <div class="hero-content glass"><p class="eyebrow">Market News</p><h2>Latest headlines to support your picks</h2></div>
+    </header>
+    <main class="wrapper"><section id="newsFeed" class="strategy-sections"></section></main>
+    <footer class="wrapper footer"><p>News page for earnings, macro and sector updates.</p></footer>
+    <script src="app.js" type="module"></script>
+  </body>
+</html>
