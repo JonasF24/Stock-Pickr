@@ -40,14 +40,3 @@ python3 -m http.server 4173
 # open http://localhost:4173
 ```
 
-## Deploy to GitHub Pages
-
-1. Create a GitHub repository and push this project.
-2. In GitHub, go to **Settings → Pages**.
-3. Under **Build and deployment**, choose **Deploy from a branch**.
-4. Select `main` branch and `/ (root)` folder.
-5. Your site URL will be:
-
-```text
-https://<your-github-username>.github.io/<your-repo-name>/
-```
