@@ -7,11 +7,11 @@ const strategyConfig = [
 ];
 
 const indexMaps = [
-  { name: 'S&P 500', tickers: ['AAPL', 'MSFT', 'NVDA', 'AMZN', 'GOOGL'], change: '+0.8%' },
+  { name: 'S&P 500', tickers: ['AAPL', 'MSFT', 'NVDA', 'AMZN', 'GOOGL'], change: '+0.7%' },
   { name: 'Dow Jones', tickers: ['UNH', 'MSFT', 'HD', 'MCD', 'JPM'], change: '+0.3%' },
-  { name: 'Russell 2000', tickers: ['SMCI', 'PLTR', 'INTC', 'PFE', 'OXY'], change: '-0.2%' },
-  { name: 'Nasdaq 100', tickers: ['NVDA', 'MSFT', 'AAPL', 'AMD', 'ADBE'], change: '+1.2%' },
-  { name: 'S&P 400 MidCap', tickers: ['OXY', 'PFE', 'INTC', 'PLTR', 'SMCI'], change: '+0.1%' }
+  { name: 'Russell 2000', tickers: ['SMCI', 'PLTR', 'INTC', 'PFE', 'OXY'], change: '+0.5%' },
+  { name: 'Nasdaq 100', tickers: ['NVDA', 'MSFT', 'AAPL', 'AMD', 'ADBE'], change: '+1.1%' },
+  { name: 'S&P 400 MidCap', tickers: ['OXY', 'PFE', 'INTC', 'PLTR', 'SMCI'], change: '+0.5%' }
 ];
 
 const newsItems = [
@@ -21,10 +21,10 @@ const newsItems = [
 ];
 
 const cryptoAssets = [
-  { symbol: 'BTC', name: 'Bitcoin', price: '$68,420', change: '+2.1%' },
-  { symbol: 'ETH', name: 'Ethereum', price: '$3,640', change: '+1.6%' },
-  { symbol: 'SOL', name: 'Solana', price: '$172', change: '+3.7%' },
-  { symbol: 'BNB', name: 'BNB', price: '$612', change: '+0.9%' }
+  { symbol: 'BTC', name: 'Bitcoin', price: '$83,140', change: '+1.8%' },
+  { symbol: 'ETH', name: 'Ethereum', price: '$4,210', change: '+1.2%' },
+  { symbol: 'SOL', name: 'Solana', price: '$196', change: '+2.6%' },
+  { symbol: 'BNB', name: 'BNB', price: '$684', change: '+0.7%' }
 ];
 
 const predictionMarkets = [
