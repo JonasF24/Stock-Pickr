@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import datetime as dt
 import json
+import math
 from pathlib import Path
 
 import pandas as pd
@@ -48,6 +49,94 @@ def safe_info(ticker: yf.Ticker) -> dict:
         return {}
 
 
+def _num(value: object, default: float = 0.0) -> float:
+    try:
+        n = float(value)
+    except (TypeError, ValueError):
+        return default
+    if math.isnan(n) or math.isinf(n):
+        return default
+    return n
+
+
+def _normalize_debt_to_equity(value: object) -> float:
+    de = _num(value, 0.0)
+    return de / 100 if de > 5 else de
+
+
+def _derive_fcf_trend(ticker: yf.Ticker, info: dict, revenue_growth: float, op_margin: float) -> str:
+    candidates = [
+        "Free Cash Flow",
+        "Operating Cash Flow",
+        "Total Cash From Operating Activities",
+    ]
+
+    for table_name in ("cashflow", "quarterly_cashflow"):
+        table = getattr(ticker, table_name, None)
+        if table is None or table.empty:
+            continue
+        for row in candidates:
+            if row not in table.index:
+                continue
+            series = table.loc[row].dropna()
+            values = [_num(v) for v in series.tolist() if _num(v) != 0.0]
+            if len(values) < 2:
+                continue
+            latest, prev = values[0], values[1]
+            if prev == 0:
+                return "up" if latest > 0 else "down"
+            delta = (latest - prev) / abs(prev)
+            if delta > 0.1:
+                return "up"
+            if delta < -0.1:
+                return "down"
+            return "stable"
+
+    # Deterministic fallback when cash-flow history is unavailable.
+    fcf = _num(info.get("freeCashflow"), 0.0)
+    if fcf > 0 and revenue_growth >= 0 and op_margin >= 0.15:
+        return "up"
+    if fcf > 0:
+        return "stable"
+    return "down"
+
+
+def _classify_risk(info: dict, revenue_growth: float, eps_growth: float, op_margin: float, debt_to_equity: float) -> str:
+    beta = _num(info.get("beta"), 1.1)
+    score = 0
+
+    if beta > 1.4:
+        score += 2
+    elif beta > 1.1:
+        score += 1
+
+    if debt_to_equity > 2:
+        score += 2
+    elif debt_to_equity > 1:
+        score += 1
+
+    if op_margin < 0.08:
+        score += 2
+    elif op_margin < 0.15:
+        score += 1
+
+    if eps_growth < 0:
+        score += 2
+    elif eps_growth < 0.05:
+        score += 1
+
+    if revenue_growth < 0:
+        score += 2
+    elif revenue_growth < 0.04:
+        score += 1
+
+    if score <= 2:
+        return "low"
+    if score <= 5:
+        return "mid"
+    return "high"
+
+
 def build_stock_record(symbol: str) -> dict | None:
     tk = yf.Ticker(symbol)
     info = safe_info(tk)
@@ -55,33 +144,28 @@ def build_stock_record(symbol: str) -> dict | None:
     if not mcap:
         return None
 
-    rev1 = info.get("revenueGrowth") or 0
-    earn1 = info.get("earningsGrowth") or 0
-    roe = info.get("returnOnEquity") or 0
-    de = (info.get("debtToEquity") or 0) / 100 if (info.get("debtToEquity") or 0) > 5 else (info.get("debtToEquity") or 0)
-    fcf = info.get("freeCashflow") or 0
-    peg = info.get("pegRatio") or 0
-
-    # Approximate long-term growth proxies when point-in-time series is unavailable.
-    rev5 = max(-1.0, rev1 * 2.2)
-    earn5 = max(-1.0, earn1 * 1.8)
+    rev_growth = _num(info.get("revenueGrowth"), 0.0)
+    eps_growth = _num(info.get("earningsGrowth"), 0.0)
+    op_margin = _num(info.get("operatingMargins"), 0.0)
+    roe = _num(info.get("returnOnEquity"), 0.0)
+    de = _normalize_debt_to_equity(info.get("debtToEquity"))
+    dividend_yield = max(0.0, _num(info.get("dividendYield"), 0.0))
+    fcf_trend = _derive_fcf_trend(tk, info, rev_growth, op_margin)
+    risk = _classify_risk(info, rev_growth, eps_growth, op_margin, de)
 
     return {
         "ticker": symbol.replace("-", "."),
         "name": info.get("shortName", symbol),
         "sector": info.get("sector", "Unknown"),
         "marketCap": int(mcap),
-        "revenueGrowth1Y": rev1,
-        "revenueGrowth5Y": rev5,
-        "earningsGrowth1Y": earn1,
-        "earningsGrowth5Y": earn5,
-        "roe": roe,
-        "debtToEquity": float(de),
-        "freeCashFlowTTM": int(fcf),
-        "peg": float(peg) if peg else 0.0,
-        "dividendYield": float(info.get("dividendYield") or 0),
-        "dividend": bool((info.get("dividendYield") or 0) > 0),
-        "buffett": bool(roe and roe > 0.12 and de < 1.5 and (fcf or 0) > 0),
+        "risk": risk,
+        "revenueGrowth": rev_growth,
+        "epsGrowth": eps_growth,
+        "opMargin": op_margin,
+        "fcfTrend": fcf_trend,
+        "dividend": dividend_yield > 0,
+        "dividendYield": dividend_yield,
+        "buffett": bool(roe > 0.12 and de < 1.5 and op_margin > 0.15 and fcf_trend != "down"),
     }
 
 
@@ -121,6 +205,7 @@ def main() -> None:
             print(f"Processed {i}/{len(symbols)}")
 
     stocks = sorted(stocks, key=lambda s: s["marketCap"], reverse=True)[:500]
+    stocks = [{k: v for k, v in s.items() if k != "sector"} for s in stocks]
 
     (DATA / "stocks.json").write_text(json.dumps(stocks, indent=2))
     (DATA / "index-maps.json").write_text(json.dumps(build_index_maps(), indent=2))
