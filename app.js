@@ -189,9 +189,31 @@ function renderStockPicks() {
 }
 
 async function initStockPicks() {
-  if (!document.getElementById('strategySections')) return;
-  const res = await fetch('./data/stocks.json');
-  state.stocks = await res.json();
+  const sectionsRoot = document.getElementById('strategySections');
+  if (!sectionsRoot) return;
+
+  const statsGrid = document.getElementById('statsGrid');
+  const renderLoadError = (message) => {
+    sectionsRoot.innerHTML = `<section class="section-card glass"><div class="section-head"><h3>Unable to load stock picks</h3></div><p>${message}</p><p class="mini-line">Please try refreshing the page. If the issue persists, verify the data source is available.</p></section>`;
+    if (statsGrid) {
+      statsGrid.innerHTML = `<article class="stat-card glass"><p>Stock picks status</p><strong>Data unavailable</strong><small class="mini-line">${message}</small></article>`;
+    }
+  };
+
+  try {
+    const res = await fetch('./data/stocks.json');
+    if (!res.ok) {
+      throw new Error(`Stock data request failed (${res.status} ${res.statusText || 'unknown status'})`);
+    }
+
+    state.stocks = await res.json();
+  } catch (error) {
+    const detail = error instanceof Error ? error.message : String(error);
+    console.error('Failed to initialize stock picks:', error);
+    renderLoadError(`Stock data could not be loaded: ${detail}.`);
+    return;
+  }
+
   wireFilters();
   renderStockPicks();
 }
