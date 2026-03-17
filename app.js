@@ -37,6 +37,13 @@ const state = { stocks: [], search: '', category: 'all' };
 const money = new Intl.NumberFormat('en-US', { notation: 'compact', compactDisplay: 'short', maximumFractionDigits: 1 });
 
 const fmtPercent = (value) => `${(value * 100).toFixed(1)}%`;
+const escapeHTML = (value) =>
+  String(value)
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&#39;');
 
 function scoreStock(stock) {
   const growthScore = stock.revenueGrowth * 30 + stock.epsGrowth * 30;
@@ -94,7 +101,10 @@ function renderNews() {
   if (!target) return;
   target.innerHTML = newsItems
     .map(
-      (item) => `<section class="section-card glass"><div class="section-head"><h3>${item.title}</h3><span class="badge">${item.tag}</span></div><p class="mini-line">${item.time}</p></section>`
+      (item) =>
+        `<section class="section-card glass"><div class="section-head"><h3>${escapeHTML(item.title)}</h3><span class="badge">${escapeHTML(
+          item.tag
+        )}</span></div><p class="mini-line">${escapeHTML(item.time)}</p></section>`
     )
     .join('');
 }
@@ -104,7 +114,10 @@ function renderCrypto() {
   if (!target) return;
   target.innerHTML = cryptoAssets
     .map(
-      (asset) => `<article class="stat-card glass"><p>${asset.symbol} · ${asset.name}</p><strong>${asset.price}</strong><small class="mini-line">24h ${asset.change}</small></article>`
+      (asset) =>
+        `<article class="stat-card glass"><p>${escapeHTML(asset.symbol)} · ${escapeHTML(asset.name)}</p><strong>${escapeHTML(
+          asset.price
+        )}</strong><small class="mini-line">24h ${escapeHTML(asset.change)}</small></article>`
     )
     .join('');
 }
@@ -114,7 +127,10 @@ function renderPredictionMarkets() {
   if (!target) return;
   target.innerHTML = predictionMarkets
     .map(
-      (item) => `<section class="section-card glass"><div class="section-head"><h3>${item.question}</h3><span class="badge">${item.probability}</span></div></section>`
+      (item) =>
+        `<section class="section-card glass"><div class="section-head"><h3>${escapeHTML(item.question)}</h3><span class="badge">${escapeHTML(
+          item.probability
+        )}</span></div></section>`
     )
     .join('');
 }
@@ -150,14 +166,14 @@ function renderStockCard(stock) {
   const tags = [];
   if (stock.buffett) tags.push('Buffett fit');
   if (stock.dividend) tags.push('Dividend');
-  return `<article class="stock-card"><h4>${stock.ticker} · ${stock.name}</h4><div class="stock-meta"><span>Mkt Cap ${money.format(
-    stock.marketCap
-  )}</span><span>${stock.risk.toUpperCase()} RISK</span></div><div class="stock-meta"><span>Rev ${fmtPercent(stock.revenueGrowth)}</span><span>EPS ${fmtPercent(
-    stock.epsGrowth
-  )}</span></div><div class="stock-meta"><span>Op Margin ${fmtPercent(stock.opMargin)}</span><span>Score ${scoreStock(stock).toFixed(
-    1
-  )}</span></div><div style="display:flex; gap:.4rem; margin-top:.55rem; flex-wrap:wrap;">${tags
-    .map((tag) => `<span class="badge">${tag}</span>`)
+  return `<article class="stock-card"><h4>${escapeHTML(stock.ticker)} · ${escapeHTML(stock.name)}</h4><div class="stock-meta"><span>Mkt Cap ${escapeHTML(
+    money.format(stock.marketCap)
+  )}</span><span>${escapeHTML(stock.risk.toUpperCase())} RISK</span></div><div class="stock-meta"><span>Rev ${escapeHTML(
+    fmtPercent(stock.revenueGrowth)
+  )}</span><span>EPS ${escapeHTML(fmtPercent(stock.epsGrowth))}</span></div><div class="stock-meta"><span>Op Margin ${escapeHTML(
+    fmtPercent(stock.opMargin)
+  )}</span><span>Score ${escapeHTML(scoreStock(stock).toFixed(1))}</span></div><div style="display:flex; gap:.4rem; margin-top:.55rem; flex-wrap:wrap;">${tags
+    .map((tag) => `<span class="badge">${escapeHTML(tag)}</span>`)
     .join('')}</div></article>`;
 }
 
@@ -179,7 +195,9 @@ function renderSections(stocks) {
   sectionsRoot.innerHTML = strategyConfig
     .map((section) => {
       const picks = grouped[section.key].slice(0, 6);
-      return `<section class="section-card glass"><div class="section-head"><div><h3>${section.title}</h3><small>${section.description}</small></div><span class="badge">${grouped[section.key].length} matches</span></div><div class="stock-grid">${
+      return `<section class="section-card glass"><div class="section-head"><div><h3>${escapeHTML(section.title)}</h3><small>${escapeHTML(
+        section.description
+      )}</small></div><span class="badge">${escapeHTML(grouped[section.key].length)} matches</span></div><div class="stock-grid">${
         picks.length ? picks.map((stock) => renderStockCard(stock)).join('') : '<p>No stocks match this filter.</p>'
       }</div></section>`;
     })
