@@ -1,26 +1,23 @@
 const strategyConfig = [
-  { key: 'low', title: 'Low Risk Stocks', description: 'Strict quality/value rules with lower leverage and strong profitability.' },
-  { key: 'mid', title: 'Mid Risk Stocks', description: 'Balanced growth + quality profile with valuation discipline.' },
-  { key: 'high', title: 'High Risk Stocks', description: 'Full-throttle growth profile with looser leverage tolerance.' },
+  { key: 'low', title: 'Low Risk Stocks', description: 'Stable earnings, strong balance sheets, resilient margins.' },
+  { key: 'mid', title: 'Mid Risk Stocks', description: 'Balanced upside with moderate volatility and cyclical exposure.' },
+  { key: 'high', title: 'High Risk Stocks', description: 'Higher growth/turnaround potential with elevated drawdown risk.' },
   { key: 'buffett', title: 'Warren Buffett Style', description: 'Durable moat + profitability + cash flow + valuation discipline.' },
   { key: 'dividend', title: 'Dividend + Growth', description: 'Income streams supported by healthy earnings growth.' }
 ];
 
-const excludedSectors = new Set(['Financial Services', 'Basic Materials', 'Energy', 'Utilities', 'Real Estate']);
-
-const fallbackIndexMaps = [
-  { name: 'S&P 500', tiles: [] },
-  { name: 'Dow Jones', tiles: [] },
-  { name: 'Russell 2000', tiles: [] },
-  { name: 'Nasdaq 100', tiles: [] },
-  { name: 'S&P 400 MidCap', tiles: [] }
+const indexMaps = [
+  { name: 'S&P 500', tickers: ['AAPL', 'MSFT', 'NVDA', 'AMZN', 'GOOGL'], change: '+0.8%' },
+  { name: 'Dow Jones', tickers: ['UNH', 'MSFT', 'HD', 'MCD', 'JPM'], change: '+0.3%' },
+  { name: 'Russell 2000', tickers: ['SMCI', 'PLTR', 'INTC', 'PFE', 'OXY'], change: '-0.2%' },
+  { name: 'Nasdaq 100', tickers: ['NVDA', 'MSFT', 'AAPL', 'AMD', 'ADBE'], change: '+1.2%' },
+  { name: 'S&P 400 MidCap', tickers: ['OXY', 'PFE', 'INTC', 'PLTR', 'SMCI'], change: '+0.1%' }
 ];
 
 const newsItems = [
-  { title: 'US markets coverage', source: 'Reuters', href: 'https://www.reuters.com/markets/us/' },
-  { title: 'Latest market headlines', source: 'CNBC', href: 'https://www.cnbc.com/markets/' },
-  { title: 'Global markets coverage', source: 'Bloomberg', href: 'https://www.bloomberg.com/markets' },
-  { title: 'Finance & markets desk', source: 'Wall Street Journal', href: 'https://www.wsj.com/finance' }
+  { title: 'Mega-cap earnings beat supports broad index sentiment', tag: 'Earnings', time: '2h ago' },
+  { title: 'Fed commentary cools rate-cut expectations', tag: 'Macro', time: '4h ago' },
+  { title: 'Energy majors guide lower on commodity softness', tag: 'Sector', time: '5h ago' }
 ];
 
 const cryptoAssets = [
@@ -31,24 +28,22 @@ const cryptoAssets = [
 ];
 
 const predictionMarkets = [
-  { title: 'Will the Fed cut rates by July?', probability: '58% Yes', href: 'https://polymarket.com/' },
-  { title: 'Will Bitcoin hit a new all-time high this year?', probability: '62% Yes', href: 'https://polymarket.com/' },
-  { title: 'Will the U.S. enter a recession in 2026?', probability: '33% Yes', href: 'https://polymarket.com/' },
-  { title: 'Will S&P 500 close above 6000 this year?', probability: '47% Yes', href: 'https://polymarket.com/' }
+  { question: 'US recession in next 12 months', probability: '33%' },
+  { question: 'Fed cuts >= 2 times this year', probability: '58%' },
+  { question: 'S&P 500 closes year above 5600', probability: '47%' }
 ];
 
-const state = { stocks: [], search: '', category: 'all', indexMaps: fallbackIndexMaps, meta: null };
+const state = { stocks: [], search: '', category: 'all' };
 const money = new Intl.NumberFormat('en-US', { notation: 'compact', compactDisplay: 'short', maximumFractionDigits: 1 });
+
 const fmtPercent = (value) => `${(value * 100).toFixed(1)}%`;
 
-const asNumber = (v, fallback = 0) => (Number.isFinite(v) ? v : fallback);
-
 function scoreStock(stock) {
-  const growthScore = asNumber(stock.revenueGrowth1Y) * 20 + asNumber(stock.earningsGrowth1Y) * 20;
-  const profitabilityScore = asNumber(stock.roe) * 20;
-  const fcfScore = asNumber(stock.freeCashFlowTTM) > 0 ? 15 : -10;
-  const valuationScore = asNumber(stock.peg) > 0 && asNumber(stock.peg) < 2 ? 10 : -8;
-  return growthScore + profitabilityScore + fcfScore + valuationScore;
+  const growthScore = stock.revenueGrowth * 30 + stock.epsGrowth * 30;
+  const profitabilityScore = stock.opMargin * 25;
+  const cashFlowScore = stock.fcfTrend === 'up' ? 10 : stock.fcfTrend === 'stable' ? 5 : -8;
+  const dividendScore = stock.dividend ? Math.min(stock.dividendYield * 300, 10) : 0;
+  return growthScore + profitabilityScore + cashFlowScore + dividendScore;
 }
 
 function setupThemeToggle() {
@@ -62,33 +57,17 @@ function setupThemeToggle() {
   });
 }
 
-function tileColor(change) {
-  if (change > 2) return 'tile-pos-strong';
-  if (change > 0) return 'tile-pos';
-  if (change < -2) return 'tile-neg-strong';
-  if (change < 0) return 'tile-neg';
-  return 'tile-flat';
-}
-
 function renderMaps() {
   const target = document.getElementById('indexMaps');
   if (!target) return;
-
-  target.innerHTML = state.indexMaps
+  target.innerHTML = indexMaps
     .map(
-      (idx) => `
-      <section class="section-card glass">
-        <div class="section-head"><h3>${idx.name}</h3><span class="badge">as of ${idx.asOf || 'latest close'}</span></div>
-        <div class="heatmap-grid">
-          ${idx.tiles
-            .map(
-              (tile) => `<a class="map-tile ${tileColor(tile.changePct)}" style="flex:${tile.weight}" href="https://finance.yahoo.com/quote/${tile.ticker}" target="_blank" rel="noopener noreferrer"><strong>${
-                tile.ticker
-              }</strong><span>${tile.changePct > 0 ? '+' : ''}${tile.changePct.toFixed(2)}%</span></a>`
-            )
-            .join('')}
-        </div>
-      </section>`
+      (item) => `
+      <article class="stat-card glass">
+        <p>${item.name}</p>
+        <strong>${item.change}</strong>
+        <small class="mini-line">Top names: ${item.tickers.join(', ')}</small>
+      </article>`
     )
     .join('');
 }
@@ -98,7 +77,7 @@ function renderNews() {
   if (!target) return;
   target.innerHTML = newsItems
     .map(
-      (item) => `<a class="section-card glass clickable-card" href="${item.href}" target="_blank" rel="noopener noreferrer"><div class="section-head"><h3>${item.title}</h3><span class="badge">${item.source}</span></div><p class="mini-line">Open article ↗</p></a>`
+      (item) => `<section class="section-card glass"><div class="section-head"><h3>${item.title}</h3><span class="badge">${item.tag}</span></div><p class="mini-line">${item.time}</p></section>`
     )
     .join('');
 }
@@ -118,9 +97,16 @@ function renderPredictionMarkets() {
   if (!target) return;
   target.innerHTML = predictionMarkets
     .map(
-      (item) => `<a class="section-card glass clickable-card" href="${item.href}" target="_blank" rel="noopener noreferrer"><div class="section-head"><h3>${item.title}</h3><span class="badge">${item.probability}</span></div><p class="mini-line">Trade on Polymarket ↗</p></a>`
+      (item) => `<section class="section-card glass"><div class="section-head"><h3>${item.question}</h3><span class="badge">${item.probability}</span></div></section>`
     )
     .join('');
+}
+
+function matchesCategory(stock, category) {
+  if (category === 'all') return true;
+  if (category === 'buffett') return stock.buffett;
+  if (category === 'dividend') return stock.dividend;
+  return stock.risk === category;
 }
 
 function matchesSearch(stock, search) {
@@ -129,102 +115,8 @@ function matchesSearch(stock, search) {
   return stock.ticker.toLowerCase().includes(needle) || stock.name.toLowerCase().includes(needle);
 }
 
-function isExcludedSector(stock) {
-  return excludedSectors.has(stock.sector || '');
-}
-
-function evaluateCategory(stock, key) {
-  if (isExcludedSector(stock) && ['low', 'mid', 'high'].includes(key)) {
-    return { inside: false, borderline: false, failedMetric: 'Excluded sector' };
-  }
-
-  const m = {
-    rev5y: asNumber(stock.revenueGrowth5Y),
-    rev1y: asNumber(stock.revenueGrowth1Y),
-    earn5y: asNumber(stock.earningsGrowth5Y),
-    earn1y: asNumber(stock.earningsGrowth1Y),
-    roe: asNumber(stock.roe),
-    debtToEquity: asNumber(stock.debtToEquity, 999),
-    fcf: asNumber(stock.freeCashFlowTTM),
-    peg: asNumber(stock.peg, 999),
-    buffett: !!stock.buffett,
-    dividend: !!stock.dividend
-  };
-
-  const fail = (metric) => ({ inside: false, borderline: true, failedMetric: metric });
-
-  if (key === 'high') {
-    if (!(m.rev5y > 1)) return fail('Revenue Growth (5Y) > 1');
-    if (!(m.rev1y > 0.2)) return fail('Revenue Growth (1Y,TTM) > 0.2');
-    if (!(m.debtToEquity >= 0 && m.debtToEquity < 5)) return fail('Debt/Equity < 5');
-    if (!(m.peg > 0 && m.peg < 2)) return fail('PEG (5Y Exp-Mean) < 2');
-    return { inside: true, borderline: false, failedMetric: null };
-  }
-
-  if (key === 'mid') {
-    if (!(m.rev5y > 0.5)) return fail('Revenue Growth (5Y) > 0.5');
-    if (!(m.rev1y > 0.05)) return fail('Revenue Growth (1Y,TTM) > 0.05');
-    if (!(m.earn5y > 0.1)) return fail('Earnings Growth (5Y) > 0.1');
-    if (!(m.roe > 0.15)) return fail('ROE > 0.15');
-    if (!(m.debtToEquity >= 0 && m.debtToEquity < 1)) return fail('Debt/Equity < 1');
-    if (!(m.fcf > 0)) return fail('Free Cash Flow (TTM) > 0');
-    if (!(m.peg > 0 && m.peg < 2)) return fail('PEG (5Y Exp-Mean) < 2');
-    return { inside: true, borderline: false, failedMetric: null };
-  }
-
-  if (key === 'low') {
-    if (!(m.rev5y > 0.5)) return fail('Revenue Growth (5Y) > 0.5');
-    if (!(m.rev1y > 0.05)) return fail('Revenue Growth (1Y,TTM) > 0.05');
-    if (!(m.earn1y > 0.05)) return fail('Earnings Growth (1Y,TTM) > 0.05');
-    if (!(m.roe > 0.15)) return fail('ROE > 0.15');
-    if (!(m.debtToEquity >= 0 && m.debtToEquity < 1)) return fail('Debt/Equity < 1');
-    if (!(m.fcf > 0)) return fail('Free Cash Flow (TTM) > 0');
-    if (!(m.peg > 0 && m.peg < 1)) return fail('PEG (5Y Exp-Mean) < 1');
-    return { inside: true, borderline: false, failedMetric: null };
-  }
-
-  if (key === 'buffett') {
-    if (!m.buffett) return fail('Buffett fit rules');
-    if (!(m.roe > 0.12)) return fail('ROE > 0.12');
-    if (!(m.debtToEquity < 1.5)) return fail('Debt/Equity < 1.5');
-    return { inside: true, borderline: false, failedMetric: null };
-  }
-
-  if (key === 'dividend') {
-    if (!m.dividend) return fail('Dividend policy');
-    if (!(asNumber(stock.dividendYield) > 0.01)) return fail('Dividend Yield > 1%');
-    if (!(m.earn1y > 0)) return fail('Earnings Growth (1Y,TTM) > 0');
-    return { inside: true, borderline: false, failedMetric: null };
-  }
-
-  return { inside: false, borderline: false, failedMetric: null };
-}
-
-function groupByCategory(stocks, key) {
-  const inside = [];
-  const borderline = [];
-
-  stocks.forEach((stock) => {
-    const result = evaluateCategory(stock, key);
-    if (result.inside) inside.push({ stock, failedMetric: null });
-    else if (result.borderline) borderline.push({ stock, failedMetric: result.failedMetric });
-  });
-
-  inside.sort((a, b) => scoreStock(b.stock) - scoreStock(a.stock));
-  borderline.sort((a, b) => scoreStock(b.stock) - scoreStock(a.stock));
-  return { inside, borderline };
-}
-
-function categoryFilteredStocks() {
-  const base = state.stocks.filter((stock) => matchesSearch(stock, state.search));
-  if (state.category === 'all') return base;
-  return base.filter((stock) => evaluateCategory(stock, state.category).inside);
-}
-
-function renderDataStatus() {
-  const node = document.getElementById('dataStatus');
-  if (!node || !state.meta) return;
-  node.textContent = `Data refresh: daily market close ${state.meta.last_market_refresh || '-'} • weekly rebalance ${state.meta.last_weekly_rebalance || '-'} • earnings sync ${state.meta.last_earnings_sync || '-'}`;
+function filteredStocks() {
+  return state.stocks.filter((stock) => matchesCategory(stock, state.category) && matchesSearch(stock, state.search));
 }
 
 function buildStats(stocks) {
@@ -240,49 +132,38 @@ function buildStats(stocks) {
   statsGrid.innerHTML = stats.map((item) => `<article class="stat-card glass"><p>${item.label}</p><strong>${item.value}</strong></article>`).join('');
 }
 
-function renderStockCard(entry, isBorderline) {
-  const stock = entry.stock;
+function renderStockCard(stock) {
   const tags = [];
   if (stock.buffett) tags.push('Buffett fit');
   if (stock.dividend) tags.push('Dividend');
-  if (isBorderline) tags.push('Borderline');
-
-  const metricBadge = isBorderline
-    ? `<span class="metric-badge metric-badge-red">Outside: ${entry.failedMetric}</span>`
-    : '<span class="metric-badge metric-badge-green">Inside criteria</span>';
-
-  return `<article class="stock-card ${isBorderline ? 'stock-card-borderline' : ''}">
-      <h4>${stock.ticker} · ${stock.name}</h4>
-      <div class="stock-meta"><span>${stock.sector || 'N/A'}</span><span>Mkt Cap ${money.format(stock.marketCap)}</span></div>
-      <div class="stock-meta"><span>Rev 1Y ${fmtPercent(asNumber(stock.revenueGrowth1Y))}</span><span>Earn 1Y ${fmtPercent(asNumber(stock.earningsGrowth1Y))}</span></div>
-      <div class="stock-meta"><span>ROE ${fmtPercent(asNumber(stock.roe))}</span><span>D/E ${asNumber(stock.debtToEquity).toFixed(2)}</span></div>
-      <div class="stock-meta"><span>PEG ${asNumber(stock.peg).toFixed(2)}</span><span>Score ${scoreStock(stock).toFixed(1)}</span></div>
-      <div style="display:flex; gap:.4rem; margin-top:.55rem; flex-wrap:wrap;">${tags.map((tag) => `<span class="badge">${tag}</span>`).join('')}</div>
-      <div style="margin-top:.55rem;">${metricBadge}</div>
-    </article>`;
+  return `<article class="stock-card"><h4>${stock.ticker} · ${stock.name}</h4><div class="stock-meta"><span>Mkt Cap ${money.format(
+    stock.marketCap
+  )}</span><span>${stock.risk.toUpperCase()} RISK</span></div><div class="stock-meta"><span>Rev ${fmtPercent(stock.revenueGrowth)}</span><span>EPS ${fmtPercent(
+    stock.epsGrowth
+  )}</span></div><div class="stock-meta"><span>Op Margin ${fmtPercent(stock.opMargin)}</span><span>Score ${scoreStock(stock).toFixed(
+    1
+  )}</span></div><div style="display:flex; gap:.4rem; margin-top:.55rem; flex-wrap:wrap;">${tags
+    .map((tag) => `<span class="badge">${tag}</span>`)
+    .join('')}</div></article>`;
 }
 
 function renderSections(stocks) {
   const sectionsRoot = document.getElementById('strategySections');
   if (!sectionsRoot) return;
+  const grouped = {
+    low: stocks.filter((s) => s.risk === 'low').sort((a, b) => scoreStock(b) - scoreStock(a)),
+    mid: stocks.filter((s) => s.risk === 'mid').sort((a, b) => scoreStock(b) - scoreStock(a)),
+    high: stocks.filter((s) => s.risk === 'high').sort((a, b) => scoreStock(b) - scoreStock(a)),
+    buffett: stocks.filter((s) => s.buffett).sort((a, b) => scoreStock(b) - scoreStock(a)),
+    dividend: stocks.filter((s) => s.dividend).sort((a, b) => scoreStock(b) - scoreStock(a))
+  };
 
   sectionsRoot.innerHTML = strategyConfig
     .map((section) => {
-      const grouped = groupByCategory(stocks, section.key);
-      return `<details class="section-card glass category-details" open>
-          <summary class="section-head">
-            <div><h3>${section.title}</h3><small>${section.description}</small></div>
-            <span class="badge">${grouped.inside.length} inside • ${grouped.borderline.length} borderline</span>
-          </summary>
-          <div class="drop-group">
-            <h4 class="subhead">Inside category</h4>
-            <div class="stock-grid">${grouped.inside.length ? grouped.inside.map((entry) => renderStockCard(entry, false)).join('') : '<p>No inside matches.</p>'}</div>
-          </div>
-          <div class="drop-group">
-            <h4 class="subhead">Borderline (just outside)</h4>
-            <div class="stock-grid">${grouped.borderline.length ? grouped.borderline.map((entry) => renderStockCard(entry, true)).join('') : '<p>No borderline names.</p>'}</div>
-          </div>
-        </details>`;
+      const picks = grouped[section.key].slice(0, 6);
+      return `<section class="section-card glass"><div class="section-head"><div><h3>${section.title}</h3><small>${section.description}</small></div><span class="badge">${grouped[section.key].length} matches</span></div><div class="stock-grid">${
+        picks.length ? picks.map((stock) => renderStockCard(stock)).join('') : '<p>No stocks match this filter.</p>'
+      }</div></section>`;
     })
     .join('');
 }
@@ -302,38 +183,22 @@ function wireFilters() {
 }
 
 function renderStockPicks() {
-  const stocks = categoryFilteredStocks();
+  const stocks = filteredStocks();
   buildStats(stocks);
   renderSections(stocks);
 }
 
-async function loadJson(path, fallback) {
-  try {
-    const res = await fetch(path);
-    if (!res.ok) throw new Error(`failed ${path}`);
-    return await res.json();
-  } catch (_) {
-    return fallback;
-  }
-}
-
 async function initStockPicks() {
   if (!document.getElementById('strategySections')) return;
-  state.stocks = await loadJson('./data/stocks.json', []);
-  state.meta = await loadJson('./data/update-meta.json', null);
-  renderDataStatus();
+  const res = await fetch('./data/stocks.json');
+  state.stocks = await res.json();
   wireFilters();
   renderStockPicks();
 }
 
-async function initMaps() {
-  state.indexMaps = await loadJson('./data/index-maps.json', fallbackIndexMaps);
-  renderMaps();
-}
-
 async function init() {
   setupThemeToggle();
-  await initMaps();
+  renderMaps();
   renderNews();
   renderCrypto();
   renderPredictionMarkets();
