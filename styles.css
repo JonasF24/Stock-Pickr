@@ -77,6 +77,8 @@ body {
   justify-content: space-between;
   align-items: center;
   padding: 1rem 1.2rem;
+  position: relative;
+  z-index: 50;
 }
 
 .top-nav h1 {
@@ -114,14 +116,80 @@ body {
   display: block;
   margin-top: 0.35rem;
 }
-.theme-toggle {
+
+.account-menu {
+  position: relative;
+}
+
+.account-trigger {
   border: 1px solid var(--surface-border);
   background: transparent;
   color: var(--text);
   border-radius: 999px;
-  width: 42px;
-  height: 42px;
+  min-height: 42px;
+  padding: 0.25rem 0.65rem 0.25rem 0.25rem;
   cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.profile-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 1px solid var(--surface-border);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(90, 248, 162, 0.14);
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.account-label {
+  font-size: 0.8rem;
+}
+
+.account-panel {
+  position: absolute;
+  top: calc(100% + 0.5rem);
+  right: 0;
+  width: min(330px, 88vw);
+  padding: 0.9rem;
+  z-index: 40;
+}
+
+.signup-form {
+  display: grid;
+  gap: 0.35rem;
+  margin-top: 0.45rem;
+}
+
+.menu-section-title {
+  margin: 0.8rem 0 0.35rem;
+  font-size: 0.78rem;
+  color: var(--muted);
+}
+
+.google-signin-slot {
+  min-height: 40px;
+}
+
+.menu-action {
+  border: 1px solid var(--surface-border);
+  background: transparent;
+  color: var(--text);
+  border-radius: 10px;
+  cursor: pointer;
+  padding: 0.58rem 0.75rem;
+  margin-top: 0.35rem;
+  text-align: left;
+}
+
+.menu-action-primary {
+  text-align: center;
+  background: rgba(90, 248, 162, 0.15);
 }
 
 .hero-content {
