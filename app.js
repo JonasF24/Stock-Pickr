@@ -33,6 +33,10 @@ const predictionMarkets = [
   { question: 'S&P 500 closes year above 5600', probability: '47%' }
 ];
 
+const SHEETS_WEB_APP_URL = '';
+const ACCOUNT_STORAGE_KEY = 'stock_pickr_account';
+const THEME_STORAGE_KEY = 'stock_pickr_theme';
+
 const state = { stocks: [], search: '', category: 'all' };
 const money = new Intl.NumberFormat('en-US', { notation: 'compact', compactDisplay: 'short', maximumFractionDigits: 1 });
 
@@ -44,6 +48,163 @@ const escapeHTML = (value) =>
     .replaceAll('>', '&gt;')
     .replaceAll('"', '&quot;')
     .replaceAll("'", '&#39;');
+
+function getStoredAccount() {
+  const raw = localStorage.getItem(ACCOUNT_STORAGE_KEY);
+  if (!raw) return null;
+  try {
+    return JSON.parse(raw);
+  } catch {
+    localStorage.removeItem(ACCOUNT_STORAGE_KEY);
+    return null;
+  }
+}
+
+function saveAccount(account) {
+  localStorage.setItem(ACCOUNT_STORAGE_KEY, JSON.stringify(account));
+}
+
+function setTheme(nextTheme) {
+  const html = document.documentElement;
+  html.dataset.theme = nextTheme;
+  localStorage.setItem(THEME_STORAGE_KEY, nextTheme);
+}
+
+function applyStoredTheme() {
+  const storedTheme = localStorage.getItem(THEME_STORAGE_KEY);
+  if (storedTheme === 'light' || storedTheme === 'dark') {
+    setTheme(storedTheme);
+  }
+}
+
+async function saveSignupToSheet(payload) {
+  if (!SHEETS_WEB_APP_URL) return;
+  const response = await fetch(SHEETS_WEB_APP_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload)
+  });
+
+  if (!response.ok) {
+    throw new Error(`Google Sheets request failed: ${response.status}`);
+  }
+}
+
+function updateAccountUI() {
+  const account = getStoredAccount();
+  const avatar = document.getElementById('accountAvatar');
+  const label = document.getElementById('accountLabel');
+  const status = document.getElementById('accountStatus');
+  const signOut = document.getElementById('signOutButton');
+
+  if (!avatar || !label || !status || !signOut) return;
+
+  if (account) {
+    avatar.textContent = account.fullName ? account.fullName[0].toUpperCase() : '👤';
+    label.textContent = account.fullName || 'Account';
+    status.textContent = `Connected as ${account.fullName} via ${account.authMethod === 'google' ? 'Google' : 'email + phone'}.`;
+    signOut.hidden = false;
+  } else {
+    avatar.textContent = '👤';
+    label.textContent = 'Account';
+    status.textContent = 'No account connected.';
+    signOut.hidden = true;
+  }
+}
+
+function setupAccountMenu() {
+  applyStoredTheme();
+
+  const menuRoot = document.getElementById('accountMenuRoot');
+  const menuButton = document.getElementById('accountMenuButton');
+  const panel = document.getElementById('accountMenuPanel');
+  const signupForm = document.getElementById('signupForm');
+  const message = document.getElementById('signupMessage');
+  const authMethod = document.getElementById('authMethod');
+  const phone = document.getElementById('phone');
+  const password = document.getElementById('password');
+  const themeButton = document.getElementById('menuThemeToggle');
+  const signOutButton = document.getElementById('signOutButton');
+
+  if (!menuRoot || !menuButton || !panel || !signupForm || !message || !authMethod || !phone || !password || !themeButton || !signOutButton) {
+    return;
+  }
+
+  const updateMethodRequirements = () => {
+    const isEmailPhone = authMethod.value === 'email_phone';
+    phone.required = isEmailPhone;
+    password.required = isEmailPhone;
+    password.placeholder = isEmailPhone ? 'Create password' : 'Not needed for Google sign up';
+  };
+
+  menuButton.addEventListener('click', () => {
+    const isOpen = !panel.hidden;
+    panel.hidden = isOpen;
+    menuButton.setAttribute('aria-expanded', String(!isOpen));
+  });
+
+  document.addEventListener('click', (event) => {
+    if (!menuRoot.contains(event.target)) {
+      panel.hidden = true;
+      menuButton.setAttribute('aria-expanded', 'false');
+    }
+  });
+
+  authMethod.addEventListener('change', updateMethodRequirements);
+
+  themeButton.addEventListener('click', () => {
+    const current = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
+    setTheme(current);
+  });
+
+  signupForm.addEventListener('submit', async (event) => {
+    event.preventDefault();
+
+    const formData = new FormData(signupForm);
+    const account = {
+      authMethod: String(formData.get('authMethod')),
+      fullName: String(formData.get('fullName')).trim(),
+      email: String(formData.get('email')).trim(),
+      phone: String(formData.get('phone')).trim(),
+      createdAt: new Date().toISOString()
+    };
+
+    if (!account.fullName || !account.email) {
+      message.textContent = 'Please complete your name and email.';
+      return;
+    }
+
+    if (account.authMethod === 'email_phone' && !account.phone) {
+      message.textContent = 'Phone is required for Email + phone sign up.';
+      return;
+    }
+
+    try {
+      await saveSignupToSheet(account);
+      saveAccount(account);
+      updateAccountUI();
+      message.textContent = SHEETS_WEB_APP_URL
+        ? 'Account created and saved to Google Sheets.'
+        : 'Account created locally. Add your Google Sheets Web App URL in app.js to sync signups.';
+      signupForm.reset();
+      updateMethodRequirements();
+    } catch (error) {
+      message.textContent = 'Account created locally, but syncing to Google Sheets failed.';
+      saveAccount(account);
+      updateAccountUI();
+      console.error(error);
+    }
+  });
+
+  signOutButton.addEventListener('click', () => {
+    localStorage.removeItem(ACCOUNT_STORAGE_KEY);
+    updateAccountUI();
+    message.textContent = 'Signed out.';
+  });
+
+  updateMethodRequirements();
+  updateAccountUI();
+}
 
 function scoreStock(stock) {
   const growthScore = stock.revenueGrowth * 30 + stock.epsGrowth * 30;
@@ -68,17 +229,6 @@ function evaluateCategory(stock, category) {
   }
 
   return { match: false };
-}
-
-function setupThemeToggle() {
-  const themeToggle = document.getElementById('themeToggle');
-  if (!themeToggle) return;
-  themeToggle.addEventListener('click', () => {
-    const html = document.documentElement;
-    const current = html.dataset.theme === 'dark' ? 'light' : 'dark';
-    html.dataset.theme = current;
-    themeToggle.textContent = current === 'dark' ? '🌙' : '☀️';
-  });
 }
 
 function renderMaps() {
@@ -255,7 +405,7 @@ async function initStockPicks() {
 }
 
 async function init() {
-  setupThemeToggle();
+  setupAccountMenu();
   renderMaps();
   renderNews();
   renderCrypto();
