@@ -1,0 +1,57 @@
+[
+  {
+    "name": "S&P 500",
+    "asOf": "2026-03-16",
+    "tiles": [
+      {"ticker":"MSFT","weight":10,"changePct":1.21},
+      {"ticker":"AAPL","weight":9,"changePct":-0.48},
+      {"ticker":"NVDA","weight":9,"changePct":2.43},
+      {"ticker":"AMZN","weight":6,"changePct":0.74},
+      {"ticker":"GOOGL","weight":6,"changePct":-0.29}
+    ]
+  },
+  {
+    "name": "Dow Jones",
+    "asOf": "2026-03-16",
+    "tiles": [
+      {"ticker":"UNH","weight":7,"changePct":-0.81},
+      {"ticker":"MSFT","weight":7,"changePct":1.21},
+      {"ticker":"HD","weight":6,"changePct":0.17},
+      {"ticker":"MCD","weight":5,"changePct":0.36},
+      {"ticker":"JPM","weight":5,"changePct":0.44}
+    ]
+  },
+  {
+    "name": "Russell 2000",
+    "asOf": "2026-03-16",
+    "tiles": [
+      {"ticker":"SMCI","weight":7,"changePct":3.27},
+      {"ticker":"PLTR","weight":6,"changePct":2.12},
+      {"ticker":"INTC","weight":5,"changePct":-1.54},
+      {"ticker":"PFE","weight":5,"changePct":-0.93},
+      {"ticker":"OXY","weight":4,"changePct":-0.66}
+    ]
+  },
+  {
+    "name": "Nasdaq 100",
+    "asOf": "2026-03-16",
+    "tiles": [
+      {"ticker":"NVDA","weight":10,"changePct":2.43},
+      {"ticker":"MSFT","weight":9,"changePct":1.21},
+      {"ticker":"AAPL","weight":8,"changePct":-0.48},
+      {"ticker":"AMD","weight":5,"changePct":1.62},
+      {"ticker":"ADBE","weight":4,"changePct":0.91}
+    ]
+  },
+  {
+    "name": "S&P 400 MidCap",
+    "asOf": "2026-03-16",
+    "tiles": [
+      {"ticker":"OXY","weight":6,"changePct":-0.66},
+      {"ticker":"PFE","weight":5,"changePct":-0.93},
+      {"ticker":"INTC","weight":5,"changePct":-1.54},
+      {"ticker":"SMCI","weight":6,"changePct":3.27},
+      {"ticker":"PLTR","weight":6,"changePct":2.12}
+    ]
+  }
+]
