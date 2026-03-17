@@ -31,6 +31,7 @@ A modern, green-glow multi-page investing dashboard inspired by strategy-screen 
   - Free cash flow trend
   - Dividend quality signal
 - Top banner navigation across all pages.
+- Account + settings menu with blank profile icon until signup, Google/email+phone signup form, and in-menu light/dark toggle.
 - Search/category filters, responsive layout, dark and light mode.
 
 ## Run locally
@@ -40,3 +41,7 @@ python3 -m http.server 4173
 # open http://localhost:4173
 ```
 
+
+## Google Sheets signup sync
+
+Set `SHEETS_WEB_APP_URL` in `app.js` to your deployed Google Apps Script Web App endpoint. The signup flow stores `authMethod`, name, email, phone, and timestamp only (password is intentionally excluded).
