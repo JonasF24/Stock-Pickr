@@ -21,7 +21,39 @@
           <a href="crypto.html">Crypto</a>
           <a href="prediction-markets.html">Prediction Markets</a>
         </div>
-        <button id="themeToggle" class="theme-toggle" aria-label="Toggle dark and light mode">🌙</button>
+        <div class="account-menu" id="accountMenuRoot">
+          <button id="accountMenuButton" class="account-trigger" aria-label="Open account and settings menu" aria-expanded="false">
+            <span id="accountAvatar" class="profile-avatar" aria-hidden="true">👤</span>
+            <span id="accountLabel" class="account-label">Account</span>
+          </button>
+          <div id="accountMenuPanel" class="account-panel glass" hidden>
+            <p id="accountStatus" class="mini-line">No account connected.</p>
+            <button id="menuThemeToggle" class="menu-action" type="button">Toggle light/dark mode</button>
+            <form id="signupForm" class="signup-form">
+              <label for="authMethod">Sign up method</label>
+              <select id="authMethod" name="authMethod">
+                <option value="google">Google</option>
+                <option value="email_phone">Email + phone</option>
+              </select>
+
+              <label for="fullName">Full name</label>
+              <input id="fullName" name="fullName" type="text" placeholder="Jane Investor" required />
+
+              <label for="email">Email</label>
+              <input id="email" name="email" type="email" placeholder="jane@email.com" required />
+
+              <label for="phone">Phone number</label>
+              <input id="phone" name="phone" type="tel" placeholder="+1 555 123 4567" />
+
+              <label for="password">Password</label>
+              <input id="password" name="password" type="password" placeholder="Create password" />
+
+              <button class="menu-action menu-action-primary" type="submit">Create account</button>
+            </form>
+            <p id="signupMessage" class="mini-line"></p>
+            <button id="signOutButton" class="menu-action" type="button">Sign out</button>
+          </div>
+        </div>
       </nav>
       <div class="hero-content glass">
         <p class="eyebrow">Market Heatmap</p>
