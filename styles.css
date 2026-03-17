@@ -166,6 +166,16 @@ body {
   margin-top: 0.45rem;
 }
 
+.menu-section-title {
+  margin: 0.8rem 0 0.35rem;
+  font-size: 0.78rem;
+  color: var(--muted);
+}
+
+.google-signin-slot {
+  min-height: 40px;
+}
+
 .menu-action {
   border: 1px solid var(--surface-border);
   background: transparent;

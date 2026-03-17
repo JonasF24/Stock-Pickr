@@ -34,6 +34,7 @@ const predictionMarkets = [
 ];
 
 const SHEETS_WEB_APP_URL = '';
+const GOOGLE_CLIENT_ID = '';
 const ACCOUNT_STORAGE_KEY = 'stock_pickr_account';
 const THEME_STORAGE_KEY = 'stock_pickr_theme';
 
@@ -90,6 +91,42 @@ async function saveSignupToSheet(payload) {
   }
 }
 
+function parseJwtPayload(token) {
+  const [, payloadPart] = token.split('.');
+  if (!payloadPart) return null;
+
+  try {
+    const base64 = payloadPart.replace(/-/g, '+').replace(/_/g, '/');
+    const decoded = atob(base64.padEnd(base64.length + ((4 - (base64.length % 4)) % 4), '='));
+    return JSON.parse(decoded);
+  } catch (error) {
+    console.error('Unable to parse Google credential payload', error);
+    return null;
+  }
+}
+
+function setAvatar(avatarNode, account) {
+  if (!avatarNode) return;
+  avatarNode.style.backgroundImage = '';
+  avatarNode.style.backgroundSize = '';
+  avatarNode.style.backgroundPosition = '';
+
+  if (!account) {
+    avatarNode.textContent = '👤';
+    return;
+  }
+
+  if (account.picture) {
+    avatarNode.textContent = '';
+    avatarNode.style.backgroundImage = `url(${account.picture})`;
+    avatarNode.style.backgroundSize = 'cover';
+    avatarNode.style.backgroundPosition = 'center';
+    return;
+  }
+
+  avatarNode.textContent = account.fullName ? account.fullName[0].toUpperCase() : '👤';
+}
+
 function updateAccountUI() {
   const account = getStoredAccount();
   const avatar = document.getElementById('accountAvatar');
@@ -100,12 +137,12 @@ function updateAccountUI() {
   if (!avatar || !label || !status || !signOut) return;
 
   if (account) {
-    avatar.textContent = account.fullName ? account.fullName[0].toUpperCase() : '👤';
+    setAvatar(avatar, account);
     label.textContent = account.fullName || 'Account';
     status.textContent = `Connected as ${account.fullName} via ${account.authMethod === 'google' ? 'Google' : 'email + phone'}.`;
     signOut.hidden = false;
   } else {
-    avatar.textContent = '👤';
+    setAvatar(avatar, null);
     label.textContent = 'Account';
     status.textContent = 'No account connected.';
     signOut.hidden = true;
@@ -118,24 +155,19 @@ function setupAccountMenu() {
   const menuRoot = document.getElementById('accountMenuRoot');
   const menuButton = document.getElementById('accountMenuButton');
   const panel = document.getElementById('accountMenuPanel');
-  const signupForm = document.getElementById('signupForm');
+  const signupForm = document.getElementById('emailSignupForm');
   const message = document.getElementById('signupMessage');
-  const authMethod = document.getElementById('authMethod');
+  const googleConfigHint = document.getElementById('googleConfigHint');
+  const googleSigninButton = document.getElementById('googleSigninButton');
   const phone = document.getElementById('phone');
-  const password = document.getElementById('password');
   const themeButton = document.getElementById('menuThemeToggle');
   const signOutButton = document.getElementById('signOutButton');
 
-  if (!menuRoot || !menuButton || !panel || !signupForm || !message || !authMethod || !phone || !password || !themeButton || !signOutButton) {
+  if (!menuRoot || !menuButton || !panel || !signupForm || !message || !googleConfigHint || !googleSigninButton || !phone || !themeButton || !signOutButton) {
     return;
   }
 
-  const updateMethodRequirements = () => {
-    const isEmailPhone = authMethod.value === 'email_phone';
-    phone.required = isEmailPhone;
-    password.required = isEmailPhone;
-    password.placeholder = isEmailPhone ? 'Create password' : 'Not needed for Google sign up';
-  };
+  phone.required = true;
 
   menuButton.addEventListener('click', () => {
     const isOpen = !panel.hidden;
@@ -150,8 +182,6 @@ function setupAccountMenu() {
     }
   });
 
-  authMethod.addEventListener('change', updateMethodRequirements);
-
   themeButton.addEventListener('click', () => {
     const current = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
     setTheme(current);
@@ -162,7 +192,7 @@ function setupAccountMenu() {
 
     const formData = new FormData(signupForm);
     const account = {
-      authMethod: String(formData.get('authMethod')),
+      authMethod: 'email_phone',
       fullName: String(formData.get('fullName')).trim(),
       email: String(formData.get('email')).trim(),
       phone: String(formData.get('phone')).trim(),
@@ -174,7 +204,7 @@ function setupAccountMenu() {
       return;
     }
 
-    if (account.authMethod === 'email_phone' && !account.phone) {
+    if (!account.phone) {
       message.textContent = 'Phone is required for Email + phone sign up.';
       return;
     }
@@ -187,7 +217,6 @@ function setupAccountMenu() {
         ? 'Account created and saved to Google Sheets.'
         : 'Account created locally. Add your Google Sheets Web App URL in app.js to sync signups.';
       signupForm.reset();
-      updateMethodRequirements();
     } catch (error) {
       message.textContent = 'Account created locally, but syncing to Google Sheets failed.';
       saveAccount(account);
@@ -202,7 +231,70 @@ function setupAccountMenu() {
     message.textContent = 'Signed out.';
   });
 
-  updateMethodRequirements();
+  const handleGoogleCredentialResponse = async (response) => {
+    const claims = parseJwtPayload(response.credential || '');
+    if (!claims || !claims.email) {
+      message.textContent = 'Google sign-in failed: invalid credential payload.';
+      return;
+    }
+
+    const account = {
+      authMethod: 'google',
+      fullName: claims.name || claims.given_name || 'Google User',
+      email: claims.email,
+      phone: '',
+      picture: claims.picture || '',
+      createdAt: new Date().toISOString()
+    };
+
+    try {
+      await saveSignupToSheet(account);
+      saveAccount(account);
+      updateAccountUI();
+      message.textContent = SHEETS_WEB_APP_URL
+        ? 'Google account connected and saved to Google Sheets.'
+        : 'Google account connected locally. Add your Google Sheets Web App URL in app.js to sync signups.';
+    } catch (error) {
+      saveAccount(account);
+      updateAccountUI();
+      message.textContent = 'Google account connected locally, but syncing to Google Sheets failed.';
+      console.error(error);
+    }
+  };
+
+  const renderGoogleButton = (attempt = 0) => {
+    if (!GOOGLE_CLIENT_ID) {
+      googleConfigHint.textContent = 'Set GOOGLE_CLIENT_ID in app.js to enable Google Sign-In.';
+      return;
+    }
+
+    if (!window.google?.accounts?.id) {
+      if (attempt < 6) {
+        window.setTimeout(() => renderGoogleButton(attempt + 1), 500);
+        return;
+      }
+      googleConfigHint.textContent = 'Google Identity Services failed to load. Please refresh the page.';
+      return;
+    }
+
+    window.google.accounts.id.initialize({
+      client_id: GOOGLE_CLIENT_ID,
+      callback: handleGoogleCredentialResponse
+    });
+
+    window.google.accounts.id.renderButton(googleSigninButton, {
+      theme: 'outline',
+      size: 'medium',
+      shape: 'pill',
+      text: 'continue_with',
+      width: 260
+    });
+
+    googleConfigHint.textContent = 'Google Sign-In ready.';
+  };
+
+  renderGoogleButton();
+
   updateAccountUI();
 }
 
