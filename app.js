@@ -46,6 +46,23 @@ function scoreStock(stock) {
   return growthScore + profitabilityScore + cashFlowScore + dividendScore;
 }
 
+function evaluateCategory(stock, category) {
+  const score = scoreStock(stock);
+
+  if (category === 'all') return { match: true };
+  if (category === 'buffett') return { match: stock.buffett };
+  if (category === 'dividend') return { match: stock.dividend };
+  if (category === 'low' || category === 'mid') return { match: stock.risk === category };
+
+  if (category === 'high') {
+    if (stock.risk !== 'high') return { match: false };
+    if (score < 35) return { match: false, reason: 'Risk score too low' };
+    return { match: true };
+  }
+
+  return { match: false };
+}
+
 function setupThemeToggle() {
   const themeToggle = document.getElementById('themeToggle');
   if (!themeToggle) return;
@@ -103,10 +120,7 @@ function renderPredictionMarkets() {
 }
 
 function matchesCategory(stock, category) {
-  if (category === 'all') return true;
-  if (category === 'buffett') return stock.buffett;
-  if (category === 'dividend') return stock.dividend;
-  return stock.risk === category;
+  return evaluateCategory(stock, category).match;
 }
 
 function matchesSearch(stock, search) {
@@ -150,12 +164,16 @@ function renderStockCard(stock) {
 function renderSections(stocks) {
   const sectionsRoot = document.getElementById('strategySections');
   if (!sectionsRoot) return;
+
+  const sortByScoreDesc = (a, b) => scoreStock(b) - scoreStock(a);
+  const getCategoryStocks = (category) => stocks.filter((s) => evaluateCategory(s, category).match).sort(sortByScoreDesc);
+
   const grouped = {
-    low: stocks.filter((s) => s.risk === 'low').sort((a, b) => scoreStock(b) - scoreStock(a)),
-    mid: stocks.filter((s) => s.risk === 'mid').sort((a, b) => scoreStock(b) - scoreStock(a)),
-    high: stocks.filter((s) => s.risk === 'high').sort((a, b) => scoreStock(b) - scoreStock(a)),
-    buffett: stocks.filter((s) => s.buffett).sort((a, b) => scoreStock(b) - scoreStock(a)),
-    dividend: stocks.filter((s) => s.dividend).sort((a, b) => scoreStock(b) - scoreStock(a))
+    low: getCategoryStocks('low'),
+    mid: getCategoryStocks('mid'),
+    high: getCategoryStocks('high'),
+    buffett: getCategoryStocks('buffett'),
+    dividend: getCategoryStocks('dividend')
   };
 
   sectionsRoot.innerHTML = strategyConfig
