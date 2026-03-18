@@ -102,3 +102,101 @@
     <script src="app.js" type="module"></script>
   </body>
 </html>
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Stock Pickr Strategies</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="styles.css" />
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
+  </head>
+  <body>
+    <div class="bg-glow bg-glow-1"></div>
+    <div class="bg-glow bg-glow-2"></div>
+
+    <header class="hero wrapper">
+      <nav class="top-nav glass">
+        <h1>Stock Pickr</h1>
+        <div class="nav-links">
+          <a class="active" href="index.html">Stock Picks</a>
+          <a href="maps.html">Index Maps</a>
+          <a href="news.html">News</a>
+          <a href="crypto.html">Crypto</a>
+          <a href="prediction-markets.html">Prediction Markets</a>
+        </div>
+        <span id="freshnessBadge" hidden></span>
+        <div class="account-menu" id="accountMenuRoot">
+          <button id="accountMenuButton" class="account-trigger" aria-label="Open account and settings menu" aria-expanded="false">
+            <span id="accountAvatar" class="profile-avatar" aria-hidden="true">👤</span>
+            <span id="accountLabel" class="account-label">Account</span>
+          </button>
+          <div id="accountMenuPanel" class="account-panel glass" hidden>
+            <p id="accountStatus" class="mini-line">No account connected.</p>
+            <button id="menuThemeToggle" class="menu-action" type="button">Toggle light/dark mode</button>
+
+            <p class="menu-section-title">Continue with Google</p>
+            <div id="googleSigninButton" class="google-signin-slot"></div>
+            <p id="googleConfigHint" class="mini-line"></p>
+
+            <p class="menu-section-title">Or sign up with email + phone</p>
+            <form id="emailSignupForm" class="signup-form">
+              <label for="fullName">Full name</label>
+              <input id="fullName" name="fullName" type="text" placeholder="Jane Investor" required />
+              <label for="email">Email</label>
+              <input id="email" name="email" type="email" placeholder="jane@email.com" required />
+              <label for="phone">Phone number</label>
+              <input id="phone" name="phone" type="tel" placeholder="+1 555 123 4567" required />
+              <label for="password">Password</label>
+              <input id="password" name="password" type="password" placeholder="Create password" required />
+              <button class="menu-action menu-action-primary" type="submit">Create account</button>
+            </form>
+            <p id="signupMessage" class="mini-line"></p>
+            <button id="signOutButton" class="menu-action" type="button">Sign out</button>
+          </div>
+        </div>
+      </nav>
+
+      <div class="hero-content glass">
+        <p class="eyebrow">Top-500 US Market Cap Screener</p>
+        <h2>Strategy board for smart, category-based stock investing.</h2>
+        <p>
+          This dashboard mirrors a modern strategy experience and screens the US large-cap universe.
+          Picks are grouped using earnings-report-derived quality, risk, valuation, and income signals.
+        </p>
+      </div>
+    </header>
+
+    <main class="wrapper">
+      <section class="controls glass">
+        <div>
+          <label for="search">Search ticker/company</label>
+          <input id="search" type="text" placeholder="AAPL, Microsoft..." />
+        </div>
+        <div>
+          <label for="categoryFilter">Category</label>
+          <select id="categoryFilter">
+            <option value="all">All Categories</option>
+            <option value="low">Low Risk</option>
+            <option value="mid">Mid Risk</option>
+            <option value="high">High Risk</option>
+            <option value="buffett">Warren Buffett Style</option>
+            <option value="dividend">Dividend + Growth</option>
+          </select>
+        </div>
+      </section>
+
+      <section class="stats-grid" id="statsGrid"></section>
+      <section id="strategySections" class="strategy-sections"></section>
+    </main>
+
+    <footer class="wrapper footer">
+      <p>Designed for GitHub Pages deployment • Modern green glow UI • Dark/Light mode</p>
+    </footer>
+
+    <script src="app.js" type="module"></script>
+  </body>
+</html>
