@@ -364,7 +364,139 @@ html[data-theme='light'] .stock-card {
     gap: 0.6rem;
     flex-direction: column;
   }
+/* ── Live Price Styles ──────────────────────────────────────────────────── */
 
+.price-up   { color: #5af8a2; }
+.price-down { color: #ff6b6b; }
+
+.live-dot {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #5af8a2;
+  animation: pulse-dot 2s ease-in-out infinite;
+  vertical-align: middle;
+  margin-left: 3px;
+}
+
+@keyframes pulse-dot {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50%       { opacity: 0.4; transform: scale(0.7); }
+}
+
+.stock-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.stock-card-header h4 {
+  margin: 0;
+  flex: 1;
+}
+
+.stock-live-price {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  flex-shrink: 0;
+}
+
+.live-price-value {
+  font-weight: 700;
+  font-size: 0.9rem;
+  color: var(--text);
+}
+
+.live-price-change {
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+
+/* ── Freshness Badge ────────────────────────────────────────────────────── */
+
+#freshnessBadge {
+  font-size: 0.7rem;
+  color: var(--muted);
+  border: 1px solid var(--surface-border);
+  border-radius: 999px;
+  padding: 0.15rem 0.55rem;
+  white-space: nowrap;
+}
+
+/* ── Index Map Cards ────────────────────────────────────────────────────── */
+
+.index-map-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.index-map-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.index-map-header p {
+  margin: 0;
+  font-weight: 600;
+}
+
+.price-badge {
+  font-size: 0.78rem;
+  font-weight: 700;
+  border: 1px solid var(--surface-border);
+  border-radius: 999px;
+  padding: 0.15rem 0.55rem;
+}
+
+.price-badge.price-up   { border-color: rgba(90, 248, 162, 0.4); background: rgba(90, 248, 162, 0.1); }
+.price-badge.price-down { border-color: rgba(255, 107, 107, 0.4); background: rgba(255, 107, 107, 0.1); }
+
+.index-tiles {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.index-tile {
+  font-size: 0.74rem;
+  font-weight: 600;
+  border: 1px solid var(--surface-border);
+  border-radius: 8px;
+  padding: 0.2rem 0.45rem;
+  background: rgba(0,0,0,0.15);
+}
+
+.index-tile em {
+  font-style: normal;
+  margin-left: 3px;
+  font-weight: 400;
+}
+
+.index-tile.price-up   { border-color: rgba(90, 248, 162, 0.3); }
+.index-tile.price-down { border-color: rgba(255, 107, 107, 0.3); }
+
+/* ── Prediction Market Probability Bar ──────────────────────────────────── */
+
+.prob-bar-track {
+  height: 5px;
+  background: rgba(90, 248, 162, 0.12);
+  border-radius: 999px;
+  overflow: hidden;
+  margin-top: 0.5rem;
+}
+
+.prob-bar-fill {
+  height: 100%;
+  background: var(--primary);
+  border-radius: 999px;
+  transition: width 0.6s ease;
+}
   .controls {
     grid-template-columns: 1fr;
   }
