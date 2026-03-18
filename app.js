@@ -51,6 +51,27 @@ const escapeHTML = (value) =>
     .replaceAll('"', '&quot;')
     .replaceAll("'", '&#39;');
 
+async function fetchJsonWithFallbacks(paths, label) {
+  const errors = [];
+  for (const path of paths) {
+    try {
+      const res = await fetch(path, { headers: { Accept: 'application/json' } });
+      if (!res.ok) {
+        errors.push(`${path}: ${res.status}`);
+        continue;
+      }
+      return await res.json();
+    } catch (error) {
+      errors.push(`${path}: ${error instanceof Error ? error.message : String(error)}`);
+    }
+  }
+
+  const fileHint = window.location.protocol === 'file:'
+    ? ' (Tip: open the app with a local web server, e.g. `python3 -m http.server 4173`, instead of opening the HTML file directly.)'
+    : '';
+  throw new Error(`${label} request failed. Tried: ${errors.join(' | ')}${fileHint}`);
+}
+
 // ─── Live Price Fetching ────────────────────────────────────────────────────
 
 /**
@@ -155,9 +176,10 @@ async function renderFreshnessBadge() {
   const target = document.getElementById('freshnessBadge');
   if (!target) return;
   try {
-    const res = await fetch('./data/update-meta.json');
-    if (!res.ok) return;
-    const meta = await res.json();
+    const meta = await fetchJsonWithFallbacks(
+      ['./data/update-meta.json', 'data/update-meta.json', '/data/update-meta.json'],
+      'Update metadata'
+    );
     const raw = meta.last_market_refresh;
     if (!raw) return;
     const date = new Date(raw);
@@ -180,9 +202,10 @@ async function renderMaps() {
 
   let maps = [];
   try {
-    const res = await fetch('./data/index-maps.json');
-    if (!res.ok) throw new Error(`Failed to load index maps (${res.status})`);
-    maps = await res.json();
+    maps = await fetchJsonWithFallbacks(
+      ['./data/index-maps.json', 'data/index-maps.json', '/data/index-maps.json'],
+      'Index maps'
+    );
   } catch (err) {
     target.innerHTML = `<article class="stat-card glass"><p>Index maps unavailable</p><small class="mini-line">${escapeHTML(err.message)}</small></article>`;
     return;
@@ -435,11 +458,10 @@ async function initStockPicks() {
   };
 
   try {
-    const res = await fetch('./data/stocks.json');
-    if (!res.ok) {
-      throw new Error(`Stock data request failed (${res.status} ${res.statusText || 'unknown status'})`);
-    }
-    state.stocks = await res.json();
+    state.stocks = await fetchJsonWithFallbacks(
+      ['./data/stocks.json', 'data/stocks.json', '/data/stocks.json'],
+      'Stock data'
+    );
   } catch (error) {
     const detail = error instanceof Error ? error.message : String(error);
     console.error('Failed to initialize stock picks:', error);
